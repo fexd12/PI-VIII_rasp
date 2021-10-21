@@ -1,0 +1,7 @@
+grpc-google-pubsub-v1
+python-dotenv
+requests
+picamera
+google-cloud-vision
+adafruit-circuitpython-mcp3xxx
+adafruit-blinka
