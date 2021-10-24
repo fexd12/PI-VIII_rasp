@@ -13,10 +13,6 @@ import logging,sys,json,base64
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
-
 class PubSubError(Exception):
         
     def __init__(self, *args: object) -> None:
@@ -61,10 +57,15 @@ class PubSub():
         channel = implementations.secure_channel(self.PUBSUB_ENDPOINT, self.SSL_PORT, channel_creds)
         return pubsub_pb2.beta_create_Publisher_stub(channel)
 
-    def publish_message(self,message:dict):
-        """Lists topics in the given project."""
+    def publish_message(self,message,module,error):
+        """Publishes a message to a topic."""
         # req = pubsub_pb2.ListTopicsRequest(project=project)
-        data = base64.b64encode(bytes(json.dumps(message),'utf-8'))
+        data_send = {
+            "tipo_sensor": module,
+            "error": "X" if error else "",
+            "valor":message
+        }
+        data = base64.b64encode(bytes(json.dumps(data_send),'utf-8'))
 
         message = pubsub_pb2.PubsubMessage(data=data)
         
@@ -76,5 +77,7 @@ class PubSub():
             # for t in resp.topics:
             #     print("Topic is: {}".format(t.name))
         except NetworkError as e:
-            logging.warning('Failed to publish message: {}'.format(e))
-            raise PubSubError('module PubSub error',str(e.message))
+            print('Failed to publish message: {}'.format(e))
+            raise PubSubError('PubSub',str(e.message))
+
+publisher = PubSub('projects/southern-waters-328922/topics/Sensor')

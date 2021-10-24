@@ -1,16 +1,20 @@
 import io,base64,requests,json
 
+from pubsub import publisher 
 from picamera import PiCamera
 from google.cloud import vision
+
 
 class CameraError(Exception):
     def __init__(self, *args: object) -> None:
         if args:
             self.message = args[0]
-            self.data = base64.b64encode(bytes(args[1], 'utf-8'))
+            self.data = args[1]
         else:
             self.message = None
-            self.data = base64.b64encode(bytes({}, 'utf-8'))
+            self.data = {}
+        
+        publisher.publish_message(self.data, self.message,True)
 
     def __str__(self) -> str:
         return self.message
@@ -20,7 +24,7 @@ class Camera:
         self.camera = PiCamera()
         self.image_annotator = vision.ImageAnnotatorClient()
 
-    def take_picture(self):
+    def _take_picture(self):
 
         try:
             stream = io.BytesIO()
@@ -45,12 +49,13 @@ class Camera:
 
                 return data
         except Exception as e :
-            raise CameraError('module Camera error',str(e.message))
+            CameraError('Camera',str(e.message))
+            pass
     
     def crop_hints(self):
 
         try:
-            data_image = self.take_picture()
+            data_image = self._take_picture()
 
             image = vision.Image(content=data_image['image'])
 
@@ -72,7 +77,7 @@ class Camera:
     
     def image_properties(self):
         try:
-            data_image = self.take_picture()
+            data_image = self._take_picture()
 
             image = vision.Image(content=data_image['image'])
 
