@@ -61,9 +61,8 @@ class PubSub():
         """Publishes a message to a topic."""
         # req = pubsub_pb2.ListTopicsRequest(project=project)
         data_send = {
-            "tipo_sensor": module,
-            "error": "X" if error else "",
-            "valor":message
+            "valor":message,
+            "table": "error" if error else module
         }
         data = base64.b64encode(bytes(json.dumps(data_send),'utf-8'))
 
