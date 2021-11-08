@@ -1,9 +1,10 @@
-import io,base64,requests,json
+import io,base64,requests,json,os
 
 from pubsub import publisher 
 from picamera import PiCamera
-from google.cloud import vision
 
+from google.cloud import automl_v1beta1
+from google.cloud.automl_v1beta1.proto import service_pb2
 
 class CameraError(Exception):
     def __init__(self, *args: object) -> None:
@@ -22,7 +23,6 @@ class CameraError(Exception):
 class Camera:
     def __init__(self):
         self.camera = PiCamera()
-        self.image_annotator = vision.ImageAnnotatorClient()
 
     def _take_picture(self):
 
@@ -52,39 +52,21 @@ class Camera:
             CameraError('Camera',str(e.message))
             pass
     
-    def crop_hints(self):
-
+    def detect(self):
         try:
-            data_image = self._take_picture()
+            data = self._take_picture()
+        
+            prediction_client = automl_v1beta1.PredictionServiceClient()
 
-            image = vision.Image(content=data_image['image'])
+            name = 'projects/{}/locations/us-central1/models/{}'.format(os.getenv('PROJECT'), os.getenv('MODEL_IA'))
+            
+            payload = {'image': {'image_bytes': data }}
 
-            crop_hints_params = vision.CropHintsParams(aspect_ratios=[1.77])
+            params = {}
+            
+            return prediction_client.predict(name, payload, params)
+        
+        except CameraError as e :
+            # CameraError('Camera',str(e.message))
+            pass
 
-            image_context = vision.ImageContext(
-                crop_hints_params=crop_hints_params)
-
-            response = self.image_annotator.crop_hints(image=image, image_context=image_context)
-
-            hints = response.crop_hints_annotation.crop_hints
-
-            vertices = (['({},{})'.format(vertex.x, vertex.y)
-                        for vertex in hints[0].bounding_poly.vertices])
-
-            return vertices
-        except CameraError as e:
-            raise e
-    
-    def image_properties(self):
-        try:
-            data_image = self._take_picture()
-
-            image = vision.Image(content=data_image['image'])
-
-            response = self.image_annotator.image_properties(image=image)
-            props = response.image_properties_annotation
-
-            return props
-
-        except CameraError as e:
-            raise e
