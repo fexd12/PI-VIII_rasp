@@ -8,8 +8,9 @@ from grpc.beta import implementations
 from grpc.framework.interfaces.face.face import NetworkError
 from oauth2client import client
 from dotenv import load_dotenv
+from uuid import uuid4
 
-import logging,sys,json,base64
+import logging,sys,json,base64,os
 
 load_dotenv()
 
@@ -60,10 +61,13 @@ class PubSub():
     def publish_message(self,message,module,error):
         """Publishes a message to a topic."""
         # req = pubsub_pb2.ListTopicsRequest(project=project)
+
         data_send = {
             "valor":message,
-            "table": "error" if error else module
+            "table": "error" if error else module,
+            "id":uuid4().hex
         }
+
         data = base64.b64encode(bytes(json.dumps(data_send),'utf-8'))
 
         message = pubsub_pb2.PubsubMessage(data=data)
@@ -79,4 +83,4 @@ class PubSub():
             print('Failed to publish message: {}'.format(e))
             raise PubSubError('PubSub',str(e.message))
 
-publisher = PubSub('projects/southern-waters-328922/topics/Sensor')
+publisher = PubSub(os.getenv('TOPIC'))

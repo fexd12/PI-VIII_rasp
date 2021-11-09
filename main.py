@@ -1,7 +1,9 @@
 from threading import Thread
-
+from dotenv import load_dotenv
 from camera import Camera
 from sensor import Sensor
+
+load_dotenv()
 
 def leitura_camera():
     camera = Camera()
