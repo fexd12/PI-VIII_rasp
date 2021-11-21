@@ -1,13 +1,14 @@
 from threading import Thread
-
+from dotenv import load_dotenv
 from camera import Camera
 from sensor import Sensor
+
+load_dotenv()
 
 def leitura_camera():
     camera = Camera()
     while True:
-        properties = camera.image_properties()
-        print(properties)
+        camera.detect()
 
 def leitura_sensor():
     sensor_1 = Sensor('','1')
@@ -25,8 +26,8 @@ def main():
         t_camera = Thread(target=leitura_camera,args=())
         t_camera.start()
 
-        t_sensor = Thread(target=leitura_sensor,args=())
-        t_sensor.start()
+        # t_sensor = Thread(target=leitura_sensor,args=())
+        # t_sensor.start()
 
     except Exception as e:
         print(e)

@@ -1,9 +1,9 @@
-import io,base64,requests,json
+import io,base64,requests,json,os
 
 from pubsub import publisher 
 from picamera import PiCamera
-from google.cloud import vision
 
+from google.cloud import automl_v1beta1
 
 class CameraError(Exception):
     def __init__(self, *args: object) -> None:
@@ -22,7 +22,6 @@ class CameraError(Exception):
 class Camera:
     def __init__(self):
         self.camera = PiCamera()
-        self.image_annotator = vision.ImageAnnotatorClient()
 
     def _take_picture(self):
 
@@ -30,58 +29,41 @@ class Camera:
             stream = io.BytesIO()
 
             for _ in self.camera.capture_continuous(stream,'jpeg'):
-                    
+
                 stream.seek(0)
 
                 img_encoded = base64.b64encode(stream.read()).decode('utf-8')
 
-                data = json.dumps({
-                    'image': img_encoded
-                })
-
-                print('making request')
-
                 stream.seek(0)
                 stream.truncate()
 
-                return data
+                return img_encoded
         except Exception as e :
             CameraError('erro',str(e.message))
             pass
-    
-    def crop_hints(self):
 
+    def detect(self):
         try:
-            data_image = self._take_picture()
+            data = self._take_picture()
+        
+            prediction_client = automl_v1beta1.PredictionServiceClient()
 
-            image = vision.Image(content=data_image['image'])
+            model_full_id = automl_v1beta1.AutoMlClient.model_path(
+                os.getenv('PROJECT'), "us-central1", os.getenv('MODEL_IA'))
 
-            crop_hints_params = vision.CropHintsParams(aspect_ratios=[1.77])
+            image = automl_v1beta1.Image(image_bytes=data)
 
-            image_context = vision.ImageContext(
-                crop_hints_params=crop_hints_params)
+            payload = automl_v1beta1.ExamplePayload(image=image)
 
-            response = self.image_annotator.crop_hints(image=image, image_context=image_context)
+            request = automl_v1beta1.PredictRequest(name=model_full_id, payload=payload, params={})
 
-            hints = response.crop_hints_annotation.crop_hints
+            result = prediction_client.predict(request=request)
+            print(result)
+            
+            # publisher.publish_message(result.payload.display_name, 'camera')
+            
+            return result
 
-            vertices = (['({},{})'.format(vertex.x, vertex.y)
-                        for vertex in hints[0].bounding_poly.vertices])
-
-            return vertices
-        except CameraError as e:
-            raise e
-    
-    def image_properties(self):
-        try:
-            data_image = self._take_picture()
-
-            image = vision.Image(content=data_image['image'])
-
-            response = self.image_annotator.image_properties(image=image)
-            props = response.image_properties_annotation
-
-            return props
-
-        except CameraError as e:
-            raise e
+        except CameraError as e :
+            # CameraError('Camera',str(e.message))
+            pass
