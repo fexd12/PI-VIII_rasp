@@ -8,23 +8,11 @@ from grpc.beta import implementations
 from grpc.framework.interfaces.face.face import NetworkError
 from oauth2client import client
 from dotenv import load_dotenv
+from utils import Error
 
-import logging,sys,json,base64
+import logging,sys,json,base64,os
 
 load_dotenv()
-
-class PubSubError(Exception):
-        
-    def __init__(self, *args: object) -> None:
-        if args:
-            self.message = args[0]
-            self.data = base64.b64encode(bytes(args[1], 'utf-8'))
-        else:
-            self.message = None
-            self.data = base64.b64encode(bytes({}, 'utf-8'))
-
-    def __str__(self) -> str:
-        return self.message
 
 class PubSub():
 
@@ -57,13 +45,14 @@ class PubSub():
         channel = implementations.secure_channel(self.PUBSUB_ENDPOINT, self.SSL_PORT, channel_creds)
         return pubsub_pb2.beta_create_Publisher_stub(channel)
 
-    def publish_message(self,message,module,error):
+    def publish_message(self,message,module,error=False):
         """Publishes a message to a topic."""
         # req = pubsub_pb2.ListTopicsRequest(project=project)
         data_send = {
-            "valor":message,
+            "valor": message,
             "table": "error" if error else module
         }
+        
         data = base64.b64encode(bytes(json.dumps(data_send),'utf-8'))
 
         message = pubsub_pb2.PubsubMessage(data=data)
@@ -76,7 +65,7 @@ class PubSub():
             # for t in resp.topics:
             #     print("Topic is: {}".format(t.name))
         except NetworkError as e:
-            print('Failed to publish message: {}'.format(e))
-            raise PubSubError('PubSub',str(e.message))
+            Error('erro',str(e.message),True)
+            pass
 
-publisher = PubSub('projects/southern-waters-328922/topics/Sensor')
+publisher = PubSub(os.getenv('TOPIC'))

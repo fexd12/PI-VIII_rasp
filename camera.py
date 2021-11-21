@@ -12,7 +12,7 @@ class CameraError(Exception):
             self.data = args[1]
         else:
             self.message = None
-            self.data = {}
+            self.data = ''
         
         publisher.publish_message(self.data, self.message,True)
 
@@ -40,16 +40,13 @@ class Camera:
                 })
 
                 print('making request')
-                # print(data)
-                # res = requests.post('http://104.198.67.173:2000/separacao/',data=data)
-                # print(res.json())
 
                 stream.seek(0)
                 stream.truncate()
 
                 return data
         except Exception as e :
-            CameraError('Camera',str(e.message))
+            CameraError('erro',str(e.message))
             pass
     
     def crop_hints(self):

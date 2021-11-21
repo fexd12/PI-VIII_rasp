@@ -20,15 +20,7 @@ def leitura_sensor():
         sensor_3.read_sensor()
 
 def main():
-    # publisher = PubSub('projects/southern-waters-328922/topics/Sensor')
 
-    # # stub = publisher.create_pubsub_stub()
-    # message = {"valor":"gabriel23","tipo_sensor":"camera23"}
-    # publisher.publish_message(message)
-
-    # camera = Camera()
-    # properties = camera.image_properties()
-    # print(properties)
     try:
         t_camera = Thread(target=leitura_camera,args=())
         t_camera.start()
