@@ -1,7 +1,8 @@
 import io,base64,requests,json,os
+import uuid
 
 from pubsub import publisher 
-from picamera import PiCamera
+# from picamera import PiCamera
 
 from google.cloud import automl_v1beta1
 
@@ -21,30 +22,33 @@ class CameraError(Exception):
 
 class Camera:
     def __init__(self):
-        self.camera = PiCamera()
+        pass
+        # self.camera = PiCamera()
 
-    def _take_picture(self):
+    # def _take_picture(self):
 
-        try:
-            stream = io.BytesIO()
+    #     try:
+    #         stream = io.BytesIO()
 
-            for _ in self.camera.capture_continuous(stream,'jpeg'):
+    #         for _ in self.camera.capture_continuous(stream,'jpeg'):
 
-                stream.seek(0)
+    #             stream.seek(0)
 
-                img_encoded = base64.b64encode(stream.read()).decode('utf-8')
+    #             img_encoded = base64.b64encode(stream.read()).decode('utf-8')
 
-                stream.seek(0)
-                stream.truncate()
+    #             stream.seek(0)
+    #             stream.truncate()
 
-                return img_encoded
-        except Exception as e :
-            CameraError('erro',str(e.message))
-            pass
+    #             return img_encoded
+    #     except Exception as e :
+    #         CameraError('erro',str(e.message))
+    #         pass
 
     def detect(self):
         try:
-            data = self._take_picture()
+            # data = self._take_picture()
+            with open('img.png','rb') as f:
+                data = base64.b64encode(f.read()).decode('utf-8')
         
             prediction_client = automl_v1beta1.PredictionServiceClient()
 
@@ -58,12 +62,16 @@ class Camera:
             request = automl_v1beta1.PredictRequest(name=model_full_id, payload=payload, params={})
 
             result = prediction_client.predict(request=request)
-            print(result)
             
-            # publisher.publish_message(result.payload.display_name, 'camera')
+            id = uuid.uuid4().hex
+
+            for i in result.payload:
+                publisher.publish_message(i.display_name, 'table_camera',id,False)
             
             return result
 
-        except CameraError as e :
-            # CameraError('Camera',str(e.message))
-            pass
+        # except CameraError as e :
+        #     # CameraError('Camera',str(e.message))
+        #     pass
+        except Exception as e:
+            print(e)

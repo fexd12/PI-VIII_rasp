@@ -25,20 +25,3 @@ class Pin():
         return chan0.value, chan0.voltage
 
 
-class Error(Exception):
-    def __init__(self, *args: object) -> None:
-        if args:
-            self.message = args[0]
-            self.data = args[1]
-            self.pubsub = args[2] or False
-        else:
-            self.message = None
-            self.data = ''
-            self.pubsub = False
-        
-        print('Failed to publish message: {}'.format(self.data))
-
-        publisher.publish_message(self.data, self.message,True) if self.pubsub else None
-
-    def __str__(self) -> str:
-        return self.message
